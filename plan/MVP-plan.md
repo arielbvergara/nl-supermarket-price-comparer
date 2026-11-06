@@ -30,19 +30,24 @@ Everything runs in Docker. Nothing runs while the laptop is off; when it comes b
 
 ## 2. Ground rules for collecting data
 
-Neither AH nor Jumbo has a public API. Their apps call internal JSON endpoints that can change or close without notice, and both stores' terms of use restrict automated access. This plan assumes **private, non-commercial use at low volume**. Read both stores' terms before Phase 1; this plan does not establish that the use is permitted.
+Neither AH nor Jumbo has a public API. Their websites and apps call internal JSON endpoints that can change or close without notice. The [legal review](legal-review.md) checks whether collecting their data for private use is allowed (as of 2026-11-06):
+- **AH:** likely permitted on `www.ah.nl` paths that robots.txt allows. AH's terms allow personal use and say nothing against automated access. `api.ah.nl` disallows every bot, so it's off-limits.
+- **Jumbo:** its terms ban automated collection. No Jumbo requests, not even in the Phase 0 spike, until the decision in [legal review](legal-review.md) §7 is made.
+
+The rules below keep the MVP inside that review: **private, non-commercial use at low volume**, nothing published and nothing circumvented. Re-check the stores' terms and robots.txt before each phase.
 
 ### 2.1 Etiquette, enforced in code
+- Adapters call only paths that the host's robots.txt allows for `User-agent: *`. Phase 0 checks each endpoint (§13).
 - One request at a time per store, spaced 1–2 seconds apart with random jitter.
 - A hard cap per run: 500 requests per store by default. The run stops when it reaches the cap.
 - Retries only after a 429, a 5xx, a timeout or a network error: at most 3, with exponential backoff, always honouring `Retry-After`.
 - After 5 failures in a row, that store's run ends as `failed`.
-- One fixed set of headers, containing only what the endpoint requires. No User-Agent rotation, proxies or fingerprint spoofing: evading detection invites blocks and puts you at odds with the stores' terms.
-- **If a store blocks this polite client from your home connection, stop.** Don't work around the block; decide what to do in Phase 0 (§13).
+- One fixed set of headers, containing only what the endpoint requires, with a fixed User-Agent that names this project. Never a browser's or a store app's identity, and no User-Agent rotation, proxies or fingerprint spoofing: evading detection invites blocks, and using it to get past a refusal can amount to computer intrusion ([legal review](legal-review.md) §4.5).
+- **If a store blocks this polite client from your home connection, stop.** A bot check, a CAPTCHA or a login prompt counts as a block. Don't work around it; decide what to do in Phase 0 (§13).
 
 ### 2.2 The repository is public
-- Never commit untrimmed raw responses, database dumps or backups, `.env`, or tokens. The AH anonymous token is a bearer token, so keep it out of the logs too.
-- Trim test fixtures by hand before committing them: a few products, and only the fields the parsers read.
+- Never commit untrimmed raw responses, database dumps or backups, `.env`, or tokens. If an endpoint needs a token, keep it out of the logs too.
+- Trim test fixtures by hand before committing them: a few products, and only the fields the parsers read, never product descriptions or images.
 - Don't publish the collected data, and don't expose the app beyond `localhost`.
 
 ### 2.3 What the MVP collects each day
@@ -59,7 +64,7 @@ In total, a few hundred requests a day. Phase 0 measures the real numbers.
 ## 3. Architecture
 
 ```text
-      Albert Heijn app API          Jumbo app API
+      Albert Heijn web API          Jumbo app API
                 ^                         ^
                 +------------+------------+
                              |  HTTPS, one polite client per store
@@ -560,20 +565,21 @@ From your home connection, use `.http` files (Visual Studio, Rider, or VS Code w
 
 | Question | AH | Jumbo |
 |---|---|---|
+| Is each endpoint's path allowed by its host's robots.txt (§2.1)? | | |
 | How do you list all current promotions? Paging? Page size? | | |
 | Search by term: endpoint and maximum page size? | | |
 | Product by id? | | |
 | EAN in listings, only in detail, or not at all? | | |
 | Unit price sent? In what format? | | |
 | Promotion label, promotion price, validity dates? | | |
-| Authentication: anonymous token? How long does it last? | | |
+| Authentication: does the endpoint need a token? How long does it last? | | |
 | Does a plain, slow client get through from home? | | |
 
 Leads to start from (third-party, not verified):
-- **AH:** the community clients [`python-appie`](https://pypi.org/project/python-appie/) (0.2.2, March 2026) and [`supermarktconnector`](https://github.com/bartmachielsen/SupermarktConnector) use an anonymous token from `/mobile-auth/v1/auth/token/anonymous` and search at `/mobile-services/product/search/v2`. `python-appie` also implements product detail and is the best reference for the required headers.
-- **Jumbo:** a [commercial scraper's documentation](https://apify.com/studio-amba/jumbo-scraper) lists `ean`, `unitPrice`, `promotion` and `promotionPrice` fields from Jumbo's search backend, with no promotion dates. It also says the API sits behind Cloudflare and only answers Dutch IPs, so it won't work through a non-Dutch VPN.
+- **AH:** the community clients [`python-appie`](https://pypi.org/project/python-appie/) (0.2.2, March 2026) and [`supermarktconnector`](https://github.com/bartmachielsen/SupermarktConnector) call the app's backend on `api.ah.nl`: a token from `/mobile-auth/v1/auth/token/anonymous`, then search at `/mobile-services/product/search/v2`. That host's robots.txt disallows every bot, so it's off-limits (§2.1); use these clients only as a reference for fields and promotion labels. Look for the same data on `www.ah.nl`, whose robots.txt explicitly allows `/zoeken/api/` and `/service/rest`.
+- **Jumbo:** no Jumbo requests until the decision in [legal review](legal-review.md) §7 allows them, because Jumbo's terms ban automated collection. A [commercial scraper's documentation](https://apify.com/studio-amba/jumbo-scraper) lists `ean`, `unitPrice`, `promotion` and `promotionPrice` fields from Jumbo's search backend, with no promotion dates. It also says the API sits behind Cloudflare and only answers Dutch IPs, so it won't work through a non-Dutch VPN.
 
-**Exit:** the table is filled in and copied into §15, each endpoint has 3–5 trimmed fixtures, and each store has a go/no-go. A no-go for Jumbo means no workaround (§2.1). Instead, choose between waiting, another store, or another source, such as the open [checkjebon](https://github.com/supermarkt/checkjebon) dataset if it's still updated (its repository was last updated in November 2024).
+**Exit:** the table is filled in and copied into §15, each endpoint has 3–5 trimmed fixtures and follows the rules in [legal review](legal-review.md) §6, and each store has a go/no-go. A no-go for either store means no workaround (§2.1). Instead, choose between waiting, another store, or another source, such as the open [checkjebon](https://github.com/supermarkt/checkjebon) dataset if it's still updated (its repository was last updated in November 2024).
 
 ### Phase 1: skeleton, and AH deals end to end
 - **Repo hygiene:** `.gitignore` (dotnet, node, `.env`, `backups/`), `.gitattributes`, and `README.md` re-saved as UTF-8 (it's UTF-16 today, so git treats it as binary).
@@ -639,11 +645,12 @@ Checked on 2026-11-05 against each project's release feed:
 
 | Risk | Impact | Mitigation |
 |---|---|---|
-| A store changes or closes its app API | that store's run fails, or parses nothing | raw responses and fixtures make the fix quick; failed and zero-product runs show in the banner; the other store keeps working |
+| A store changes or closes its internal API | that store's run fails, or parses nothing | raw responses and fixtures make the fix quick; failed and zero-product runs show in the banner; the other store keeps working |
 | Jumbo blocks a plain client (Cloudflare) | no Jumbo data | stop rather than evade (§2.1); decide in Phase 0 |
 | AH listings have no EAN | no automatic matching of branded products at AH | one detail call per new product (capped), or rely on pins |
 | No promotion validity dates | no "ending soonest" | show "on offer since"; drop that sort |
-| Terms of use | a store can object to automated access | private, low volume, no republishing; read the terms before Phase 1 |
+| AH's data is only on `api.ah.nl` | that host's robots.txt disallows every bot, so no AH adapter | robots-allowed `www.ah.nl` paths only; if the data isn't there, stop and decide: ask AH, or use another source |
+| Jumbo's terms ban automated collection | collecting Jumbo data isn't permitted without Jumbo's consent | an open decision before any Jumbo request: ask Jumbo, go ahead knowingly, or replace Jumbo ([legal review](legal-review.md) §7) |
 | Laptop off for days | gaps in the history | expected; the UI shows the gaps instead of inventing prices |
 
 Phase 0 copies its findings into this section as the reference for the adapters.

@@ -10,7 +10,7 @@ The [MVP plan](MVP-plan.md) §2 leaves one question open: may this project colle
 
 | Store and host | Verdict | Why |
 |---|---|---|
-| AH, `www.ah.nl` paths that robots.txt allows | **Likely yes** | AH's terms allow copying for personal use and say nothing about automated access. robots.txt explicitly allows `/zoeken/api/` and the REST API under `/service/rest`. No opt-out covers these paths, so even the full promotions list falls under the text-and-data-mining (TDM) exception. |
+| AH, `www.ah.nl` paths that robots.txt allows | **Likely yes** | AH's terms allow copying for personal use and say nothing about automated access. robots.txt explicitly allows `/zoeken/api/` and the REST API under `/service/rest`. No opt-out covers these paths, so the text-and-data-mining (TDM) exception is available, and likely covers even the full promotions list (§4.3). |
 | AH, `api.ah.nl` (the app's backend) | **No** | Its robots.txt shuts out every bot, which likely counts as an opt-out, and nothing licenses third-party clients of the app's backend. |
 | Jumbo | **No, not under Jumbo's terms** | The terms ban scraping, crawling and repeated extraction. Mandatory law limits that ban, and the realistic risk is being blocked, but only Jumbo's written consent makes the use permitted. |
 
@@ -24,7 +24,7 @@ For both stores:
 
 The answer holds for the MVP as planned in [MVP plan](MVP-plan.md) §2:
 - One person, private and non-commercial, on a laptop.
-- Current promotions, watchlist searches, pinned products and EAN look-ups: a few hundred requests per store per day, one at a time, 1–2 seconds apart.
+- Current promotions, watchlist searches, pinned products and EAN look-ups: a few hundred requests a day in total, one at a time, 1–2 seconds apart.
 - No login, no account and no personal data.
 - Nothing published. The app stays on `localhost`, and the public repository holds code and a few trimmed fixtures.
 
@@ -90,7 +90,7 @@ The rules that decide the answer:
 - **Harm to the investment.** In *CV-Online* (C-762/19, 3 June 2021), the CJEU held that a maker can stop extraction only where it adversely affects the maker's investment, that is, its chance to recoup it.
 
 Applied to the MVP ([MVP plan](MVP-plan.md) §2.3):
-- A watchlist search fetches one page of results (20 products by default), and a pin refresh or EAN look-up fetches one product. These are insubstantial parts, which art. 3 protects. Repeating them daily changes that only if it conflicts with the store's normal exploitation (art. 2(1)(b)), which a private tool doesn't.
+- A watchlist search fetches one page of results (20 products by default), and a pin refresh or EAN look-up fetches one product. These are insubstantial parts, which art. 3 protects. Repeating them daily matters only if it conflicts with the store's normal exploitation or unjustifiably harms it (art. 2(1)(b) and art. 4). A private tool that sells nothing and publishes nothing is unlikely to, though no ruling confirms it.
 - The daily list of all current promotions may be a substantial part of a store's promotions. It needs the TDM exception (available on AH's allowed paths, doubtful for Jumbo; §4.3), or the argument that a private tool harms no investment (*CV-Online*).
 - Keeping and using the data on your own computer adds nothing: without a public, there's no re-utilisation.
 
